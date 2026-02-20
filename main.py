@@ -27,6 +27,9 @@ app = FastAPI(
     description="RAG-based translation chatbot using LlamaIndex + Chroma"
 )
 
+@app.get("/")
+def root():
+    return {"status": "running"}
 # -----------------------------------------------------------------------------
 # Request / Response Models
 # -----------------------------------------------------------------------------
