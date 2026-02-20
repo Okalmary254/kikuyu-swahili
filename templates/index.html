@@ -4,172 +4,508 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Kikuyu-Swahili ASR</title>
-
-<style>
-    /* Reset some defaults */
-* {
-    margin: 0;
-    padding: 0;
-    box-sizing: border-box;
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-}
-
-/* Body styling */
-body {
-    background: #f0f4f8;
-    color: #333;
-    line-height: 1.6;
-    display: flex;
-    justify-content: center;
-    align-items: flex-start;
-    min-height: 100vh;
-    padding: 20px;
-}
-
-/* Main container */
-.container {
-    background: #fff;
-    padding: 30px 40px;
-    border-radius: 12px;
-    box-shadow: 0 8px 20px rgba(0,0,0,0.1);
-    width: 100%;
-    max-width: 700px;
-}
-
-/* Heading */
-h1 {
-    text-align: center;
-    margin-bottom: 20px;
-    color: #1e3a8a;
-}
-
-/* Form styling */
-form {
-    display: flex;
-    flex-direction: column;
-    gap: 15px;
-}
-
-input[type="file"] {
-    padding: 8px;
-    border-radius: 6px;
-    border: 1px solid #ccc;
-    cursor: pointer;
-}
-
-button {
-    background: #1e3a8a;
-    color: #fff;
-    padding: 10px 20px;
-    border: none;
-    border-radius: 6px;
-    cursor: pointer;
-    transition: background 0.3s ease;
-}
-
-button:hover {
-    background: #374eb8;
-}
-
-/* Transcription / output display */
-.transcription {
-    margin-top: 20px;
-    padding: 15px;
-    background: #f0f4f8;
-    border-left: 4px solid #1e3a8a;
-    border-radius: 6px;
-    font-size: 1rem;
-    word-wrap: break-word;
-}
-
-/* Responsive */
-@media (max-width: 600px) {
-    .container {
-        padding: 20px;
-    }
-}
-</style>
-    
-</head>
-<body>
-    <h1>Kikuyu Speech Recognition and Translation</h1>
-
-    <!-- File Upload -->
-    <form id="upload-form" action="/transcribe" method="post" enctype="multipart/form-data">
-        <input type="file" id="file" name="file" accept=".wav">
-        <button type="submit">Upload and Transcribe</button>
-    </form>
-
-    <hr>
-
-    <!-- Microphone Recording -->
-    <button id="record-btn">Start Recording</button>
-    <button id="stop-btn" disabled>Stop Recording</button>
-
-    <h2>Transcription:</h2>
-    <p id="transcription-text">{{ transcription if transcription else "" }}</p>
-
-    <script>
-        const recordBtn = document.getElementById("record-btn");
-        const stopBtn = document.getElementById("stop-btn");
-        const transcriptionText = document.getElementById("transcription-text");
-
-        let mediaRecorder;
-        let audioChunks = [];
-
-        // Automatic language detection placeholder (just logs for now)
-        function detectLanguage(text) {
-            // Could be replaced with a real language detection library or API
-            if (!text) return "unknown";
-            if (/[\u0600-\u06FF]/.test(text)) return "Arabic";
-            if (/[\u4E00-\u9FFF]/.test(text)) return "Chinese";
-            if (/[\u0D80-\u0DFF]/.test(text)) return "Sinhala";
-            return "Kikuyu/Swahili/Other";
+    <style>
+        /* Reset some defaults */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
         }
 
-        recordBtn.onclick = async () => {
-            const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-            mediaRecorder = new MediaRecorder(stream);
+        /* Body styling */
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #333;
+            line-height: 1.6;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+        }
 
-            mediaRecorder.ondataavailable = e => {
-                audioChunks.push(e.data);
-            };
+        /* Main container */
+        .container {
+            background: #fff;
+            padding: 40px;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            width: 100%;
+            max-width: 800px;
+            transition: transform 0.3s ease;
+        }
 
-            mediaRecorder.onstop = async () => {
-                const blob = new Blob(audioChunks, { type: "audio/wav" });
-                audioChunks = [];
+        .container:hover {
+            transform: translateY(-5px);
+        }
 
-                const formData = new FormData();
-                formData.append("file", blob, "recording.wav");
+        /* Heading */
+        h1 {
+            text-align: center;
+            margin-bottom: 30px;
+            color: #1e3a8a;
+            font-size: 2.2em;
+            font-weight: 600;
+            border-bottom: 3px solid #667eea;
+            padding-bottom: 15px;
+        }
 
+        h2 {
+            color: #2d3748;
+            margin: 20px 0 10px;
+            font-size: 1.5em;
+        }
+
+        /* Form styling */
+        .upload-section {
+            background: #f7fafc;
+            padding: 25px;
+            border-radius: 12px;
+            margin-bottom: 25px;
+        }
+
+        form {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .file-input-wrapper {
+            position: relative;
+            overflow: hidden;
+            display: inline-block;
+            width: 100%;
+        }
+
+        input[type="file"] {
+            padding: 12px;
+            border-radius: 8px;
+            border: 2px dashed #cbd5e0;
+            background: #fff;
+            cursor: pointer;
+            width: 100%;
+            transition: border-color 0.3s ease;
+        }
+
+        input[type="file"]:hover {
+            border-color: #667eea;
+        }
+
+        button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #fff;
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-size: 1em;
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        button:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        button:disabled {
+            background: #cbd5e0;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        /* Recording section */
+        .recording-section {
+            background: #f7fafc;
+            padding: 25px;
+            border-radius: 12px;
+            margin-bottom: 25px;
+            text-align: center;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 15px;
+            justify-content: center;
+            margin: 15px 0;
+        }
+
+        #record-btn {
+            background: linear-gradient(135deg, #48bb78 0%, #38a169 100%);
+        }
+
+        #stop-btn {
+            background: linear-gradient(135deg, #f56565 0%, #e53e3e 100%);
+        }
+
+        /* Status indicator */
+        .status {
+            padding: 10px;
+            border-radius: 8px;
+            margin: 10px 0;
+            display: none;
+        }
+
+        .status.recording {
+            display: block;
+            background: #fef3c7;
+            color: #92400e;
+            border-left: 4px solid #f59e0b;
+        }
+
+        .status.processing {
+            display: block;
+            background: #e6f7ff;
+            color: #0050b3;
+            border-left: 4px solid #1890ff;
+        }
+
+        .status.error {
+            display: block;
+            background: #fff2f0;
+            color: #cf1322;
+            border-left: 4px solid #f5222d;
+        }
+
+        /* Transcription display */
+        .transcription-section {
+            background: #f7fafc;
+            padding: 25px;
+            border-radius: 12px;
+        }
+
+        .transcription-box {
+            background: #fff;
+            padding: 20px;
+            border-radius: 8px;
+            border: 1px solid #e2e8f0;
+            min-height: 100px;
+            font-size: 1.1rem;
+            word-wrap: break-word;
+            box-shadow: inset 0 2px 4px rgba(0,0,0,0.05);
+        }
+
+        .language-badge {
+            display: inline-block;
+            background: #667eea;
+            color: white;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.85em;
+            margin-top: 10px;
+        }
+
+        /* Responsive */
+        @media (max-width: 600px) {
+            .container {
+                padding: 20px;
+            }
+            
+            h1 {
+                font-size: 1.8em;
+            }
+            
+            .button-group {
+                flex-direction: column;
+            }
+        }
+
+        /* Loading animation */
+        .loader {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-right: 10px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1> Kikuyu-Swahili Speech Recognition</h1>
+
+        <!-- File Upload Section -->
+        <div class="upload-section">
+            <h2>Upload Audio File</h2>
+            <form id="upload-form" action="/transcribe" method="post" enctype="multipart/form-data">
+                <div class="file-input-wrapper">
+                    <input type="file" id="file" name="file" accept=".wav,.mp3,.m4a,.ogg" required>
+                </div>
+                <button type="submit" id="upload-btn">Upload and Transcribe</button>
+            </form>
+        </div>
+
+        <!-- Microphone Recording Section -->
+        <div class="recording-section">
+            <h2>🎤 Record Audio</h2>
+            <div class="button-group">
+                <button id="record-btn">Start Recording</button>
+                <button id="stop-btn" disabled>Stop Recording</button>
+            </div>
+            <div id="recording-status" class="status"></div>
+        </div>
+
+        <!-- Transcription Section -->
+        <div class="transcription-section">
+            <h2>📝 Transcription Result</h2>
+            <div id="transcription-box" class="transcription-box">
+                {% if transcription %}
+                    {{ transcription }}
+                {% else %}
+                    <span style="color: #a0aec0;">No transcription yet. Upload a file or record audio.</span>
+                {% endif %}
+            </div>
+            <div id="language-badge" class="language-badge" style="display: none;"></div>
+        </div>
+    </div>
+
+    <script>
+        // DOM Elements
+        const recordBtn = document.getElementById("record-btn");
+        const stopBtn = document.getElementById("stop-btn");
+        const uploadForm = document.getElementById("upload-form");
+        const fileInput = document.getElementById("file");
+        const uploadBtn = document.getElementById("upload-btn");
+        const transcriptionBox = document.getElementById("transcription-box");
+        const recordingStatus = document.getElementById("recording-status");
+        const languageBadge = document.getElementById("language-badge");
+
+        // State variables
+        let mediaRecorder;
+        let audioChunks = [];
+        let isRecording = false;
+
+        // Language detection function
+        function detectLanguage(text) {
+            if (!text || text === "No transcription yet. Upload a file or record audio.") {
+                languageBadge.style.display = "none";
+                return "unknown";
+            }
+
+            // Common Kikuyu words and patterns
+            const kikuyuPatterns = /(nĩ|na|wa|ga|ka|ma|ta|ĩ|ũ)/i;
+            
+            // Swahili common words
+            const swahiliWords = /(na|kwa|ya|ni|wa|ku|ma|ta|ka|la|ha|za|cha|sha)/i;
+
+            let language = "Unknown";
+            
+            if (kikuyuPatterns.test(text)) {
+                language = "Kikuyu";
+            } else if (swahiliWords.test(text)) {
+                language = "Swahili";
+            } else {
+                language = "Other";
+            }
+
+            languageBadge.style.display = "inline-block";
+            languageBadge.textContent = `Detected: ${language}`;
+            return language;
+        }
+
+        // Show status message
+        function showStatus(message, type) {
+            recordingStatus.className = "status " + type;
+            recordingStatus.textContent = message;
+        }
+
+        // Clear status
+        function clearStatus() {
+            recordingStatus.className = "status";
+            recordingStatus.textContent = "";
+        }
+
+        // Update transcription
+        function updateTranscription(text) {
+            transcriptionBox.textContent = text || "No transcription available";
+            detectLanguage(text);
+        }
+
+        // Handle file upload
+        uploadForm.addEventListener("submit", async (e) => {
+            e.preventDefault();
+
+            if (!fileInput.files.length) {
+                alert("Please select a file first!");
+                return;
+            }
+
+            const formData = new FormData(uploadForm);
+            
+            // Show loading state
+            uploadBtn.disabled = true;
+            uploadBtn.innerHTML = '<span class="loader"></span> Processing...';
+            showStatus("Processing your audio file...", "processing");
+
+            try {
                 const response = await fetch("/transcribe", {
                     method: "POST",
                     body: formData
                 });
 
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
                 const html = await response.text();
-                // Extract transcription from HTML response (simple hack)
-                const tempDiv = document.createElement("div");
-                tempDiv.innerHTML = html;
-                const trans = tempDiv.querySelector("p").innerText;
+                
+                // Parse the response
+                const parser = new DOMParser();
+                const doc = parser.parseFromString(html, 'text/html');
+                const transElement = doc.querySelector("p, .transcription, #transcription-text");
+                const transcription = transElement ? transElement.innerText : html;
 
-                transcriptionText.innerText = trans;
+                updateTranscription(transcription);
+                showStatus("File processed successfully!", "recording");
+                
+                // Clear file input
+                fileInput.value = "";
+                
+            } catch (error) {
+                console.error("Upload error:", error);
+                showStatus("Error processing file. Please try again.", "error");
+                updateTranscription("Error: Could not process the audio file.");
+            } finally {
+                // Reset button
+                uploadBtn.disabled = false;
+                uploadBtn.innerHTML = 'Upload and Transcribe';
+                
+                // Clear status after 3 seconds
+                setTimeout(clearStatus, 3000);
+            }
+        });
 
-                // Detect language automatically
-                const lang = detectLanguage(trans);
-                console.log("Detected Language:", lang);
-            };
+        // Handle recording
+        recordBtn.onclick = async () => {
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ 
+                    audio: {
+                        channelCount: 1,
+                        sampleRate: 16000
+                    } 
+                });
 
-            mediaRecorder.start();
-            recordBtn.disabled = true;
-            stopBtn.disabled = false;
+                mediaRecorder = new MediaRecorder(stream, {
+                    mimeType: 'audio/webm;codecs=opus'
+                });
+
+                audioChunks = [];
+
+                mediaRecorder.ondataavailable = e => {
+                    if (e.data.size > 0) {
+                        audioChunks.push(e.data);
+                    }
+                };
+
+                mediaRecorder.onstop = async () => {
+                    showStatus("Processing recording...", "processing");
+                    
+                    // Create WAV blob (convert from webm if needed)
+                    const audioBlob = new Blob(audioChunks, { type: 'audio/webm' });
+                    
+                    // Stop all audio tracks
+                    stream.getTracks().forEach(track => track.stop());
+
+                    const formData = new FormData();
+                    formData.append("file", audioBlob, "recording.webm");
+
+                    try {
+                        const response = await fetch("/transcribe", {
+                            method: "POST",
+                            body: formData
+                        });
+
+                        if (!response.ok) {
+                            throw new Error(`HTTP error! status: ${response.status}`);
+                        }
+
+                        const html = await response.text();
+                        
+                        // Parse the response
+                        const parser = new DOMParser();
+                        const doc = parser.parseFromString(html, 'text/html');
+                        const transElement = doc.querySelector("p, .transcription, #transcription-text");
+                        const transcription = transElement ? transElement.innerText : html;
+
+                        updateTranscription(transcription);
+                        showStatus("Recording processed successfully!", "recording");
+                        
+                    } catch (error) {
+                        console.error("Recording upload error:", error);
+                        showStatus("Error processing recording. Please try again.", "error");
+                        updateTranscription("Error: Could not process the recording.");
+                    } finally {
+                        setTimeout(clearStatus, 3000);
+                    }
+                };
+
+                mediaRecorder.start(1000); // Collect data in 1-second chunks
+                isRecording = true;
+                
+                // Update UI
+                recordBtn.disabled = true;
+                stopBtn.disabled = false;
+                showStatus("Recording in progress... Speak now!", "recording");
+                
+            } catch (error) {
+                console.error("Microphone error:", error);
+                showStatus("Error accessing microphone. Please check permissions.", "error");
+                setTimeout(clearStatus, 3000);
+            }
         };
 
         stopBtn.onclick = () => {
-            mediaRecorder.stop();
-            recordBtn.disabled = false;
-            stopBtn.disabled = true;
+            if (mediaRecorder && isRecording) {
+                mediaRecorder.stop();
+                isRecording = false;
+                
+                // Update UI
+                recordBtn.disabled = false;
+                stopBtn.disabled = true;
+            }
         };
+
+        // Clean up on page unload
+        window.addEventListener('beforeunload', () => {
+            if (mediaRecorder && isRecording) {
+                mediaRecorder.stop();
+                mediaRecorder.stream.getTracks().forEach(track => track.stop());
+            }
+        });
+
+        // Handle file drag and drop
+        const uploadSection = document.querySelector('.upload-section');
+        
+        uploadSection.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadSection.style.borderColor = '#667eea';
+        });
+
+        uploadSection.addEventListener('dragleave', (e) => {
+            e.preventDefault();
+            uploadSection.style.borderColor = '#cbd5e0';
+        });
+
+        uploadSection.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadSection.style.borderColor = '#cbd5e0';
+            
+            const files = e.dataTransfer.files;
+            if (files.length) {
+                fileInput.files = files;
+            }
+        });
     </script>
 </body>
 </html>
