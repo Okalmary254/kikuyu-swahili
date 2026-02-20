@@ -5,9 +5,9 @@ from typing import List, Dict, Any, Optional
 import PyPDF2 # type: ignore
 from functools import lru_cache
 import asyncio
-from llama_index.core import VectorStoreIndex, StorageContext, LlamaSettings # pyright: ignore[reportMissingImports]
+from llama_index.core import VectorStoreIndex, StorageContext, Settings # pyright: ignore[reportMissingImports]
 from llama_index.core import SimpleDirectoryReader, ServiceContext # pyright: ignore[reportMissingImports]
-from llama_index.core import VectorStoreIndex, Settings as LlamaSettings # type: ignore
+#from llama_index.core import VectorStoreIndex, Settings as Settings # type: ignore
 from llama_index.vector_stores.chroma import ChromaVectorStore # pyright: ignore[reportMissingImports]
 from fastapi import FastAPI, HTTPException # type: ignore
 from pydantic import BaseModel # type: ignore
@@ -75,7 +75,7 @@ async def add_documents_to_index_in_batches(documents, storage_context: StorageC
             index = VectorStoreIndex.from_documents(
                 batch,
                 storage_context=storage_context,
-                embed_model=LlamaSettings.embed_model
+                embed_model=Settings.embed_model
             )
         else:
             for doc in batch:
@@ -111,7 +111,7 @@ async def get_naive_query_engine_async(collection_name: str, similarity_top_k: i
     vector_store = ChromaVectorStore(chroma_collection=collection)
     index = VectorStoreIndex.from_vector_store(
         vector_store,
-        embed_model=LlamaSettings.embed_model
+        embed_model=Settings.embed_model
     )
     return index.as_query_engine(
         similarity_top_k=similarity_top_k,

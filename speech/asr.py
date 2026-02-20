@@ -1,5 +1,5 @@
 
-import torch 
+import torch  # pyright: ignore[reportMissingImports]
 from transformers import AutoProcessor, AutoModelForCTC
 import soundfile as sf
 

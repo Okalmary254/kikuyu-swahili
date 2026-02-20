@@ -2,9 +2,13 @@
 import os
 import logging
 from typing import Optional
-from fastapi import FastAPI, HTTPException, UploadFile, File # type: ignore
+from fastapi import FastAPI, HTTPException, UploadFile, File, Request # type: ignore
+from fastapi.responses import HTMLResponse
+from fastapi.templating import Jinja2Templates
+import shutil
 from pydantic import BaseModel # type: ignore
 import asyncio
+
 from speech.asr import KikuyuASR
 
 # Import your existing functions
@@ -27,9 +31,13 @@ app = FastAPI(
     description="RAG-based translation chatbot using LlamaIndex + Chroma"
 )
 
-@app.get("/")
-def root():
-    return {"status": "running"}
+templates = Jinja2Templates(directory="templates")
+
+asr_model = KikuyuASR()
+
+@app.get("/", response_class=HTMLResponse)
+def root(request):
+    return templates.TemplateResponse("index.html", {"request": request})
 # -----------------------------------------------------------------------------
 # Request / Response Models
 # -----------------------------------------------------------------------------
@@ -125,19 +133,21 @@ async def translate(request: TranslateRequest):
 
 asr_model = KikuyuASR()
 
-@app.post("/transcribe")
-async def transcribe(file: UploadFile = File(...)):
+@app.post("/transcribe", response_class=HTMLResponse)
+async def transcribe(request: Request, file: UploadFile = File(...)):
     if not file.filename.endswith(('.wav', '.mp3', '.flac')):
         raise HTTPException(status_code=400, detail="Unsupported file type. Please upload a .wav, .mp3, or .flac file.")
 
     try:
         # Save the uploaded file to a temporary location
         temp_file_path = f"/tmp/{file.filename}"
+        logger.info(f"Saving temporary file to: {temp_file_path}")
         with open(temp_file_path, "wb") as buffer:
+            shutil.copyfileobj(file.file, buffer)  # Save the uploaded file content to disk
             buffer.write(await file.read())  # Read and write the uploaded file content
 
         transcription = asr_model.transcribe(temp_file_path)
-        return {"transcription": transcription}
+        return templates.TemplateResponse("index.html", {"request": request, "transcription": transcription})
     except Exception as e:
         logger.error(f"Transcription error: {e}")
         raise HTTPException(status_code=500, detail="Transcription failed.")

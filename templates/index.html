@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Kikuyu-Swahili ASR</title>
+</head>
+<body>
+    <h1>Kikuyu Speech Recognition and Translation</h1>
+
+    <!-- File Upload -->
+    <form id="upload-form" action="/transcribe" method="post" enctype="multipart/form-data">
+        <input type="file" id="file" name="file" accept=".wav">
+        <button type="submit">Upload and Transcribe</button>
+    </form>
+
+    <hr>
+
+    <!-- Microphone Recording -->
+    <button id="record-btn">Start Recording</button>
+    <button id="stop-btn" disabled>Stop Recording</button>
+
+    <h2>Transcription:</h2>
+    <p id="transcription-text">{{ transcription if transcription else "" }}</p>
+
+    <script>
+        const recordBtn = document.getElementById("record-btn");
+        const stopBtn = document.getElementById("stop-btn");
+        const transcriptionText = document.getElementById("transcription-text");
+
+        let mediaRecorder;
+        let audioChunks = [];
+
+        // Automatic language detection placeholder (just logs for now)
+        function detectLanguage(text) {
+            // Could be replaced with a real language detection library or API
+            if (!text) return "unknown";
+            if (/[\u0600-\u06FF]/.test(text)) return "Arabic";
+            if (/[\u4E00-\u9FFF]/.test(text)) return "Chinese";
+            if (/[\u0D80-\u0DFF]/.test(text)) return "Sinhala";
+            return "Kikuyu/Swahili/Other";
+        }
+
+        recordBtn.onclick = async () => {
+            const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+            mediaRecorder = new MediaRecorder(stream);
+
+            mediaRecorder.ondataavailable = e => {
+                audioChunks.push(e.data);
+            };
+
+            mediaRecorder.onstop = async () => {
+                const blob = new Blob(audioChunks, { type: "audio/wav" });
+                audioChunks = [];
+
+                const formData = new FormData();
+                formData.append("file", blob, "recording.wav");
+
+                const response = await fetch("/transcribe", {
+                    method: "POST",
+                    body: formData
+                });
+
+                const html = await response.text();
+                // Extract transcription from HTML response (simple hack)
+                const tempDiv = document.createElement("div");
+                tempDiv.innerHTML = html;
+                const trans = tempDiv.querySelector("p").innerText;
+
+                transcriptionText.innerText = trans;
+
+                // Detect language automatically
+                const lang = detectLanguage(trans);
+                console.log("Detected Language:", lang);
+            };
+
+            mediaRecorder.start();
+            recordBtn.disabled = true;
+            stopBtn.disabled = false;
+        };
+
+        stopBtn.onclick = () => {
+            mediaRecorder.stop();
+            recordBtn.disabled = false;
+            stopBtn.disabled = true;
+        };
+    </script>
+</body>
+</html>
