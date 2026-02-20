@@ -2,8 +2,9 @@ import os
 import logging
 from typing import Optional
 from fastapi import FastAPI, HTTPException, UploadFile, File, Request
-from fastapi.responses import HTMLResponse
-from fastapi.templating import Jinja2Templates
+from fastapi.responses import HTMLResponse # type: ignore
+from fastapi.templating import Jinja2Templates # pyright: ignore[reportMissingImports]
+from fastapi.staticfiles import StaticFiles # pyright: ignore[reportMissingImports]
 import shutil
 import tempfile
 import asyncio
@@ -13,6 +14,7 @@ from speech.asr import KikuyuASR
 
 # Import your existing functions
 from app import get_naive_query_engine_async
+
 
 # -----------------------------------------------------------------------------
 # Logging
@@ -30,6 +32,8 @@ app = FastAPI(
 )
 
 templates = Jinja2Templates(directory="templates")
+
+app.mount("/static", StaticFiles(directory="static"), name="static")
 
 # -----------------------------------------------------------------------------
 # ASR Model
