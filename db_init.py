@@ -14,6 +14,7 @@ logger = logging.getLogger(__name__)
 
 ##create db
 ADMIN_DATABASE_URL = os.getenv("ADMIN_DATABASE_URL", "postgresql://user:password@postgres:5432/postgres")  # Admin DB for creation
+DATABASE_URL = os.getenv("DATABASE_URL", "postgresql://user:password@postgres:5432/chatdb")  # Main DB URL
 
 def create_database_if_not_exists():
     try:

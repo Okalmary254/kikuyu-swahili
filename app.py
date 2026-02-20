@@ -85,22 +85,29 @@ async def add_documents_to_index_in_batches(documents, storage_context: StorageC
 
 
 ##naive query engine setup
-class get_or_create_collection_async:
+class GetOrCreateCollectionAsync:
     def __init__(self, client, collection_name):
         self.client = client
         self.collection_name = collection_name
 
-class get_chroma_client_async:
+
+class GetChromaClientAsync:
     def __init__(self):
         pass
+
 
 async def get_chroma_client_async():
     # Simulated async client creation
     return "chroma_client"
 
+
+async def get_or_create_collection_async_fn(client, collection_name):
+    return GetOrCreateCollectionAsync(client, collection_name)
+
+
 async def get_naive_query_engine_async(collection_name: str, similarity_top_k: int = 6):
     client = await get_chroma_client_async()  # Assume defined elsewhere
-    collection = await get_or_create_collection_async(client, collection_name)
+    collection = await get_or_create_collection_async_fn(client, collection_name)
     vector_store = ChromaVectorStore(chroma_collection=collection)
     index = VectorStoreIndex.from_vector_store(
         vector_store,

@@ -122,7 +122,7 @@ async def translate(request: TranslateRequest):
 
 asr_model = KikuyuASR()
 
-@app.post("/transcribe ")
+@app.post("/transcribe")
 async def transcribe(file: UploadFile = File(...)):
     if not file.filename.endswith(('.wav', '.mp3', '.flac')):
         raise HTTPException(status_code=400, detail="Unsupported file type. Please upload a .wav, .mp3, or .flac file.")
